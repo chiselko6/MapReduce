@@ -1,6 +1,6 @@
 import socket
-from table.table import Table
-from table.errors import TableNotFoundError
+from mr.table.table import Table
+from mr.table.errors import TableNotFoundError
 
 
 class SlaveNode(object):
@@ -21,9 +21,8 @@ class SlaveNode(object):
         if table is None:
             table = self.add_table(table_path)
         for line in table_data:
-            # print 'received line: ', line
             table.write_line(line)
-            # print 'written ', line
+        return table_path
 
     def read_table(self, table_data):
         table_path = next(table_data)

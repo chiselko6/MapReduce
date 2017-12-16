@@ -5,7 +5,7 @@ from mr.connect import Connect
 
 
 def connect_to_master(host, port, master_host, master_port, size_limit):
-    Connect(master_host, master_port).send('new_slave {} {} {}'.format(host, port, str(size_limit)))
+    Connect(master_host, master_port).send_once('new_slave\n{}\n{}\n{}'.format(host, port, str(size_limit)))
 
 
 def start(port, master_host, master_port, size_limit):
@@ -32,19 +32,19 @@ def start(port, master_host, master_port, size_limit):
         conn, addr = s.accept()
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
 
-        with Connect(*addr) as connect:
-        # connect = Connect(*addr)
-            data_recv = connect.receive_by_line(conn)
+        with Connect(socket=conn) as connect:
+            data_recv = connect.receive_by_line()
             command = next(data_recv)
-            # print 'command: ', command
             if command == 'write':
-                # print 'table_name', table_name
-                slave.write_table(data_recv)
+                table_path = slave.write_table(data_recv)
+                with Connect(master_host, master_port) as master_connect:
+                    # with size
+                    new_table_inform = '\n'.join(['table_add', table_path, str(0)])
+                    print 'sending table inform: ', new_table_inform
+                    master_connect.send_once(new_table_inform)
             elif command == 'read':
                 for line in slave.read_table(data_recv):
                     conn.sendall(line)
-
-        conn.close()
 
     s.close()
 

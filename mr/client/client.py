@@ -11,31 +11,26 @@ class Client(object):
         self._master_config = MasterConfig()
 
     def write(self, table_path):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(self._master_config.address)
-        s.sendall('write')
-        node_addr = s.recv(1024)
-        print 'received node_addr: ', node_addr
+        with Connect(self._master_config.host, self._master_config.port) as connect:
+            connect.send_once('write')
+            node_addr = connect.receive()
 
-        if not node_addr:
-            raise OutOfRecourseError('An error has occured')
-        if node_addr.startswith('Error'):
-            raise OutOfRecourseError('No free nodes')
+            if not node_addr:
+                raise OutOfRecourseError('An error has occured')
+            if node_addr.startswith('Error'):
+                raise OutOfRecourseError('No free nodes')
 
-        node_host, node_port = node_addr.split(':')
-        node_port = int(node_port)
-        node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        node_socket.connect((node_host, node_port))
+            node_host, node_port = node_addr.split(':')
+            node_port = int(node_port)
+            with Connect(node_host, node_port) as node_connect:
 
-        node_socket.sendall('write\n')
-        node_socket.sendall(table_path + '\n')
-        while True:
-            line = sys.stdin.readline()
-            # print 'line read', line
-            if line == '':
-                break
-            node_socket.sendall(line)
-        node_socket.close()
+                node_connect.send('write\n')
+                node_connect.send(table_path + '\n')
+                while True:
+                    line = sys.stdin.readline()
+                    if line == '':
+                        break
+                    node_connect.send(line)
 
     def read(self, table_path):
         connect = Connect(*self._master_config.address)

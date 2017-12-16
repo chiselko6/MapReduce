@@ -11,19 +11,21 @@ class Connect(object):
         self._socket = socket
         if socket is not None:
             self.host, self.port = socket.getsockname()
-            # print 'SOCKET ADDR: ', sock.getsockname(), sock.getpeername()
 
     def _connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     print 'connecting to host...'
         self._socket.connect((self.host, self.port))
-    #     return sock
 
     def send(self, command):
         if self._socket is None:
             self._connect()
-        # sock = self.connect()
         self._socket.sendall(command)
+
+    def send_once(self, command):
+        if self._socket is None:
+            self._connect()
+        self._socket.sendall(command)
+        self._socket.shutdown(socket.SHUT_WR)
 
     def send_and_receive(self, command):
         # sock = self.connect()
@@ -31,8 +33,8 @@ class Connect(object):
         data = True
 
         self.send(command)
-        self.close()
-        self._connect()
+        # self.close()
+        # self._connect()
 
         while data:
             data = self.receive()
@@ -41,12 +43,12 @@ class Connect(object):
         # sock.close()
         return recv_data
 
-    def receive_by_line(self, sock):
+    def receive_by_line(self):
         next_line = ''
         data = True
 
         while data:
-            data = sock.recv(self.BUF_SIZE)
+            data = self._socket.recv(self.BUF_SIZE)
             next_line += data
             # print 'next_line before: ', next_line
             if '\n' in data:
@@ -64,21 +66,26 @@ class Connect(object):
         recv = ''
 
         while data:
+            print 'wait another data...'
             data = self._socket.recv(self.BUF_SIZE)
+            print 'received data: ', data
             recv += data
 
         return recv
 
     def close(self):
         self._socket.close()
+        self._socket = None
 
     def __enter__(self):
         print 'connecting to host...', self.host, self.port
         if self._socket is None:
             self._connect()
         return self
-        # self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self._socket.connect((self.host, self.port))
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+    @property
+    def socket(self):
+        return self._socket

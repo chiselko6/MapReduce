@@ -1,6 +1,7 @@
 import socket
 import sys
 from node_info import NodeInfo
+from mr.table.table_info import TableInfo
 
 
 class MasterNode(object):
@@ -8,13 +9,14 @@ class MasterNode(object):
     BUF_SIZE = 1024
 
     def __init__(self):
-        self._tables = []
-        self._nodes = []
+        self._tables = dict()
+        self._nodes = dict()
 
-    def add_node(self, new_slave_msg):
-        msg, host, port, size_limit = new_slave_msg.split()
-        node = NodeInfo(host, port, float(size_limit))
-        self._nodes.append(node)
+    def add_node(self, host, port, size_limit):
+        # msg, host, port, size_limit = new_slave_msg.split()
+        node = NodeInfo(host, int(port), float(size_limit))
+        self._nodes[(host, port)] = node
+        # self._nodes.append(node)
 
     # def add_node(self, sock, addr):
     #     size_limit = sock.recv(self.BUF_SIZE)
@@ -23,7 +25,7 @@ class MasterNode(object):
     #     self._nodes.append(node)
 
     def get_free_node(self):
-        for node in self._nodes:
+        for node in self._nodes.values():
             if node.available_size > 0:
                 return node
 
@@ -35,10 +37,24 @@ class MasterNode(object):
         sock.sendall(free_node.url)
         return True
 
-    def call_slave(self, slave):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(slave.address)
-        return s
+    def add_table_node(self, table_path, table_size, node):
+        table = self._tables.get(table_path)
+        if table is None:
+            table = TableInfo(table_path)
+            table.add_node(node, table_size)
+            self._tables[table_path] = table
+        else:
+            table.add_node(node, table_size)
 
     def map(self, table_in, table_out, script, files):
         pass
+
+    @property
+    def nodes(self):
+        return self._nodes.values()
+
+    def get_node(self, node_addr):
+        return self._nodes.get(node_addr)
+
+    def get_table_info(self, table_path):
+        return self._tables.get(table_path)
