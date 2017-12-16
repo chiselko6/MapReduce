@@ -33,3 +33,6 @@ class NodeInfo(object):
     @property
     def url(self):
         return '{}:{}'.format(self._host, self._port)
+
+    def __str__(self):
+        return '{}:{}. Total size: {}\nLimit size: {}'.format(self._host, self._port, self._size, self._size_limit)

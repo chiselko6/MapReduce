@@ -44,6 +44,8 @@ class Connect(object):
         return recv_data
 
     def receive_by_line(self):
+        if self._socket is None:
+            self._connect()
         next_line = ''
         data = True
 

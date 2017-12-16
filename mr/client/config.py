@@ -9,7 +9,7 @@ class MasterConfigParser(object):
         self._port = None
 
     def _read(self):
-        self._host = 'localhost'
+        self._host = '127.0.0.1'
         self._port = 2222
         # with open(self._config_path, 'r') as fin:
         #     lines = fin.readlines()

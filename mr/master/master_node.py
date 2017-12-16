@@ -54,6 +54,8 @@ class MasterNode(object):
         return self._nodes.values()
 
     def get_node(self, node_addr):
+        print 'get_node: ', node_addr
+        print self._nodes.values()[0]
         return self._nodes.get(node_addr)
 
     def get_table_info(self, table_path):

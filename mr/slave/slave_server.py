@@ -9,7 +9,7 @@ def connect_to_master(host, port, master_host, master_port, size_limit):
 
 
 def start(port, master_host, master_port, size_limit):
-    host = 'localhost'
+    host = '127.0.0.1'
     connect_to_master(host, port, master_host, master_port, size_limit)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,12 +39,11 @@ def start(port, master_host, master_port, size_limit):
                 table_path = slave.write_table(data_recv)
                 with Connect(master_host, master_port) as master_connect:
                     # with size
-                    new_table_inform = '\n'.join(['table_add', table_path, str(0)])
-                    print 'sending table inform: ', new_table_inform
+                    new_table_inform = '\n'.join(['table_add', host, str(port), table_path, str(0)])
                     master_connect.send_once(new_table_inform)
             elif command == 'read':
                 for line in slave.read_table(data_recv):
-                    conn.sendall(line)
+                    connect.send(line)
 
     s.close()
 
