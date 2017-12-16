@@ -1,3 +1,5 @@
+import os
+
 class Table(object):
 
     def __init__(self, name):
@@ -14,3 +16,6 @@ class Table(object):
         # print 'table write_line: ', self._name, line
         with open(self._name, 'a+') as fout:
             fout.write(line + '\n')
+
+    def delete(self):
+        os.remove(self._name)

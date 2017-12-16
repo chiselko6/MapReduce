@@ -13,8 +13,12 @@ def parse_input(data):
         return 'read', parts[1:]
     elif parts[0] == 'table_add':
         return 'table_add', parts[1:]
+    elif parts[0] == 'table_remove':
+        return 'table_remove', parts[1:]
     elif parts[0] == 'new_slave':
         return 'new_slave', parts[1:]
+    elif parts[0] == 'delete':
+        return 'delete', parts[1:]
 
 
 def start(host, port):
@@ -56,4 +60,12 @@ def start(host, port):
                 master.add_table_node(*new_table_args)
             elif command == 'new_slave':
                 master.add_node(*args)
+            elif command == 'delete':
+                table_nodes = master.get_table_info(table_path).nodes
+                nodes_addr = map(lambda node: node.url, table_nodes)
+                connect.send_once('\n'.join(nodes_addr))
+            elif command == 'table_remove':
+                node = master.get_node((args[0], args[1]))
+                remove_table_args = args[2:] + [node]
+                master.remove_table_node(*remove_table_args)
     s.close()

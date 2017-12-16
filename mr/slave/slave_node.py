@@ -32,6 +32,15 @@ class SlaveNode(object):
             raise TableNotFoundError('Table not found', table_path)
         return table.read_line()
 
+    def delete_table(self, table_data):
+        table_path = next(table_data)
+        print 'deleting', table_path
+        table = self._tables.get(table_path)
+        if table is None:
+            raise TableNotFoundError('Table not found', table_path)
+        table.delete()
+        del self._tables[table_path]
+
     def download_files(self, files):
         pass
 

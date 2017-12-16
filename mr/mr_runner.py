@@ -30,7 +30,9 @@ def run_command(namespace):
         client = Client()
         client.read(table_path)
     elif namespace.delete:
-        print namespace.delete
+        client = Client()
+        table_path = namespace.delete
+        client.delete(table_path)
     elif namespace.table_info:
         print namespace.table_info
     elif namespace.list_dir:

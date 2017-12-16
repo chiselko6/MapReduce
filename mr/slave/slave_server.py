@@ -44,6 +44,11 @@ def start(port, master_host, master_port, size_limit):
             elif command == 'read':
                 for line in slave.read_table(data_recv):
                     connect.send(line)
+            elif command == 'delete':
+                slave.delete_table(data_recv)
+                with Connect(master_host, master_port) as master_connect:
+                    removed_table_inform = '\n'.join(['table_remove', host, str(port), table_path])
+                    master_connect.send_once(removed_table_inform)
 
     s.close()
 

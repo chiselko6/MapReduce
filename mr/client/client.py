@@ -50,6 +50,19 @@ class Client(object):
                     for table_line in table_lines:
                         print table_line
 
+    def delete(self, table_path):
+        with Connect(self._master_config.host, self._master_config.port) as connect:
+            connect.send_once('delete\n' + table_path)
+            nodes_with_table = connect.receive_by_line()
+            for node_addr in nodes_with_table:
+                print 'parsing node_addr', node_addr
+                node_host, node_port = node_addr.split(':')
+                node_port = int(node_port)
+                print 'getting table from ', node_host, node_port
+                with Connect(node_host, node_port) as node_connect:
+                    node_connect.send('delete\n')
+                    node_connect.send(table_path + '\n')
+
     def add_node(self, port, master_host, master_port, size_limit):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((master_host, master_port))

@@ -25,6 +25,11 @@ class TableInfo(object):
         if node_info is None:
             self._node_infos[node] = NodeTableInfo(node, size)
 
+    def remove_node(self, node):
+        node_info = self._node_infos.get(node)
+        if node_info is not None:
+            del self._node_infos[node]
+
     @property
     def nodes(self):
         return map(lambda inf: inf.node, self._node_infos.values())

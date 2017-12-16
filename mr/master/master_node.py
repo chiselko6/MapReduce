@@ -2,6 +2,7 @@ import socket
 import sys
 from node_info import NodeInfo
 from mr.table.table_info import TableInfo
+from mr.table.errors import TableNotFoundError
 
 
 class MasterNode(object):
@@ -46,6 +47,15 @@ class MasterNode(object):
         else:
             table.add_node(node, table_size)
 
+    def remove_table_node(self, table_path, node):
+        table = self._tables.get(table_path)
+        if table is None:
+            raise TableNotFoundError('Table not found', table_path)
+        else:
+            table.remove_node(node)
+        if len(table.nodes) == 0:
+            del self._tables[table_path]
+
     def map(self, table_in, table_out, script, files):
         pass
 
@@ -59,4 +69,4 @@ class MasterNode(object):
         return self._nodes.get(node_addr)
 
     def get_table_info(self, table_path):
-        return self._tables.get(table_path)
+        return self._tables[table_path]
