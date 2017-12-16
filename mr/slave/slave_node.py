@@ -1,6 +1,7 @@
 import socket
 from mr.table.table import Table
 from mr.table.errors import TableNotFoundError
+import subprocess
 
 
 class SlaveNode(object):
@@ -15,17 +16,15 @@ class SlaveNode(object):
         self._tables[table_path] = new_table
         return new_table
 
-    def write_table(self, table_data):
-        table_path = next(table_data)
+    def write_table(self, table_path, lines):
         table = self._tables.get(table_path)
         if table is None:
             table = self.add_table(table_path)
-        for line in table_data:
+        for line in lines:
             table.write_line(line)
-        return table_path
 
-    def read_table(self, table_data):
-        table_path = next(table_data)
+    def read_table(self, table_path):
+        # table_path = next(table_data)
         print 'reading ', table_path
         table = self._tables.get(table_path)
         if table is None:
@@ -40,6 +39,26 @@ class SlaveNode(object):
             raise TableNotFoundError('Table not found', table_path)
         table.delete()
         del self._tables[table_path]
+
+    def map(self, table_in_path, table_out_path, script, helping_files=[]):
+        # mv files here
+        # table_in_path = next(map_data)
+        # table_out_path = next(map_data)
+        table_out = self._tables.get(table_out_path)
+        if table_out is None:
+            table_out = self.add_table(table_out_path)
+        # script = next(map_data)
+        # helping_files = [help_file for help_file in map_data]
+
+        for line in self.read_table(table_in_path):
+            # print line
+            # subprocess.call(script)
+            # table_out.write_line(raw_input())
+
+            def simple_map(line):
+                # line = raw_input()
+                return line + '#' + line
+            table_out.write_line(simple_map(line))
 
     def download_files(self, files):
         pass

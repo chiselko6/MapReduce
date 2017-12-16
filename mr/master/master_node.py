@@ -56,12 +56,22 @@ class MasterNode(object):
         if len(table.nodes) == 0:
             del self._tables[table_path]
 
-    def map(self, table_in, table_out, script, files):
+    def map_node(self, node, table_in, table_out, script, files=[]):
         pass
+
+    def map(self, table_in, table_out, script, files):
+        table = self._tables.get(table_in)
+        if table is None:
+            raise TableNotFoundError('Table {} not found'.format(table_in))
+        for node in table.nodes:
+            self.map_node(node, table_in, table_out, script, files)
 
     @property
     def nodes(self):
         return self._nodes.values()
+
+    def get_table_nodes(self, table_path):
+        return self._tables[table_path].nodes
 
     def get_node(self, node_addr):
         print 'get_node: ', node_addr

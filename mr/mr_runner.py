@@ -11,6 +11,7 @@ def create_parser():
     parser.add_argument('--write')
     parser.add_argument('--read')
     parser.add_argument('--delete')
+    parser.add_argument('--map', nargs='+')
     parser.add_argument('--table-info')
     parser.add_argument('--list-dir', action='store_true')
 
@@ -33,6 +34,11 @@ def run_command(namespace):
         client = Client()
         table_path = namespace.delete
         client.delete(table_path)
+    elif namespace.map:
+        client = Client()
+        table_in, table_out, script = namespace.map[:3]
+        helping_files = namespace.map[3:]
+        client.map(table_in, table_out, script, helping_files)
     elif namespace.table_info:
         print namespace.table_info
     elif namespace.list_dir:

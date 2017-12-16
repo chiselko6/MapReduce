@@ -2,6 +2,7 @@ import socket
 import sys
 from master_node import MasterNode
 from mr.connect import Connect
+from mr.util.message import line_packing
 
 
 def parse_input(data):
@@ -19,6 +20,8 @@ def parse_input(data):
         return 'new_slave', parts[1:]
     elif parts[0] == 'delete':
         return 'delete', parts[1:]
+    elif parts[0] == 'map':
+        return 'map', parts[1:]
 
 
 def start(host, port):
@@ -68,4 +71,10 @@ def start(host, port):
                 node = master.get_node((args[0], args[1]))
                 remove_table_args = args[2:] + [node]
                 master.remove_table_node(*remove_table_args)
+            elif command == 'map':
+                table_in = args[0]
+                table_nodes = master.get_table_nodes(table_in)
+                table_nodes = map(lambda node: node.url, table_nodes)
+                connect.send_once(line_packing(*table_nodes))
+
     s.close()

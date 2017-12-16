@@ -3,6 +3,7 @@ import socket
 import sys
 from client_errors import OutOfRecourseError
 from mr.connect import Connect
+from mr.util.message import line_packing
 
 
 class Client(object):
@@ -63,15 +64,25 @@ class Client(object):
                     node_connect.send('delete\n')
                     node_connect.send(table_path + '\n')
 
-    def add_node(self, port, master_host, master_port, size_limit):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((master_host, master_port))
-        s.sendall('add_node')
-        node_infos = [
-        # can take port from the caller??
-            str(port),
-            str(size_limit)
-        ]
-        for node_info in node_infos:
-            s.sendall(node_info)
-        s.close()
+    def map(self, table_in, table_out, script, helping_files=[]):
+        with Connect(self._master_config.host, self._master_config.port) as connect:
+            connect.send_once(line_packing('map', table_in))
+            nodes_with_table = connect.receive_by_line()
+            for node_addr in nodes_with_table:
+                node_host, node_port = node_addr.split(':')
+                node_port = int(node_port)
+                map_msg = line_packing('map', table_in, table_out, script)
+                with Connect(node_host, node_port) as node_connect:
+                    node_connect.send_once(map_msg)
+    # def add_node(self, port, master_host, master_port, size_limit):
+    #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     s.connect((master_host, master_port))
+    #     s.sendall('add_node')
+    #     node_infos = [
+    #     # can take port from the caller??
+    #         str(port),
+    #         str(size_limit)
+    #     ]
+    #     for node_info in node_infos:
+    #         s.sendall(node_info)
+    #     s.close()

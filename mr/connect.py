@@ -16,15 +16,13 @@ class Connect(object):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.connect((self.host, self.port))
 
-    def send(self, command):
+    def send(self, msg):
         if self._socket is None:
             self._connect()
-        self._socket.sendall(command)
+        self._socket.sendall(msg)
 
-    def send_once(self, command):
-        if self._socket is None:
-            self._connect()
-        self._socket.sendall(command)
+    def send_once(self, msg):
+        self.send(msg)
         self._socket.shutdown(socket.SHUT_WR)
 
     def send_and_receive(self, command):
@@ -60,6 +58,16 @@ class Connect(object):
                 next_line = lines[-1]
             # print 'received: ' + data
         yield next_line
+
+    def send_file(self, file_path):
+        with open(file_path, 'r') as fin:
+            for line in fin.readline():
+                self.send(line)
+        self._socket.shutdown(socket.SHUT_WR)
+
+    def receive_file(self, file_path):
+        with open(file_path, 'w') as fout:
+            fout.write(self.receive())
 
     def receive(self):
         if self._socket is None:
