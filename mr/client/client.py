@@ -19,7 +19,7 @@ class Client(object):
                 connect.send('write')
                 node_addr = connect.receive()
                 if not node_addr:
-                    raise OutOfRecourseError('An error has occured')
+                    raise RuntimeError('An error has occured')
                 if node_addr.startswith('ERROR:'):
                     raise OutOfRecourseError(node_addr)
 
@@ -48,7 +48,11 @@ class Client(object):
         with Connect(self._master_config.host, self._master_config.port) as connect:
             connect.send_once('read\n' + table_path)
             nodes_with_table = connect.receive_by_line()
+            if not nodes_with_table:
+                raise RuntimeError('Cannot get nodes with table')
             for node_addr in nodes_with_table:
+                if node_addr.startswith('ERROR:'):
+                    raise KeyError(node_addr)
                 node_host, node_port = node_addr.split(':')
                 node_port = int(node_port)
                 with Connect(node_host, node_port) as node_connect:
@@ -62,7 +66,11 @@ class Client(object):
         with Connect(self._master_config.host, self._master_config.port) as connect:
             connect.send_once('delete\n' + table_path)
             nodes_with_table = connect.receive_by_line()
+            if not nodes_with_table:
+                raise RuntimeError('Cannot get nodes with table')
             for node_addr in nodes_with_table:
+                if node_addr.startswith('ERROR:'):
+                    raise KeyError(node_addr)
                 node_host, node_port = node_addr.split(':')
                 node_port = int(node_port)
                 with Connect(node_host, node_port) as node_connect:
@@ -74,13 +82,19 @@ class Client(object):
         with Connect(self._master_config.host, self._master_config.port) as connect:
             connect.send_once(line_packing('map', table_in))
             nodes_with_table = connect.receive_by_line()
+            if not nodes_with_table:
+                raise KeyError('Cannot get nodes with table')
             for node_addr in nodes_with_table:
+                if node_addr.startswith('ERROR:'):
+                    raise KeyError(node_addr)
                 node_host, node_port = node_addr.split(':')
                 node_port = int(node_port)
                 map_msg = 'map\n'
                 with Connect(node_host, node_port) as node_connect:
                     node_connect.send_once(map_msg)
                     proc_id = node_connect.receive()
+                    if proc_id.startswith('ERROR:'):
+                        raise RuntimeError(proc_id)
 
                 for help_file in helping_files:
                     with Connect(node_host, node_port) as node_connect:
@@ -104,4 +118,6 @@ class Client(object):
             connect.send('table_info\n')
             connect.send(table_path)
             table_info = connect.receive()
+            if table_info.startswith('ERROR:'):
+                raise KeyError(table_info)
             return table_info

@@ -112,6 +112,8 @@ def handle_connection(slave, file_manager, conn, addr):
             inform_error(connect, e.msg)
         except StopIteration as e:
             inform_error(connect, 'ERROR: Invalid message')
+        except Exception as e:
+            inform_error(connect, e.msg)
 
 
 def start(port, master_host, master_port, size_limit):
