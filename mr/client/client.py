@@ -99,13 +99,15 @@ class Client(object):
                 for help_file in helping_files:
                     with Connect(node_host, node_port) as node_connect:
                         help_file_local_path = help_file.split('/')[-1]
-                        file_add_msg = line_packing('file_add', proc_id, help_file_local_path)
+                        file_add_msg = line_packing(
+                            'file_add', proc_id, help_file_local_path)
                         node_connect.send(file_add_msg + '\n')
                         file_send_start_status = node_connect.receive()
                         if file_send_start_status == 'ok':
                             node_connect.send_file(proc_id, help_file)
 
-                map_msg = line_packing('map_run', table_in, table_out, script, proc_id, line_packing(helping_files))
+                map_msg = line_packing(
+                    'map_run', table_in, table_out, script, proc_id, line_packing(helping_files))
                 with Connect(node_host, node_port) as node_connect:
                     node_connect.send_once(map_msg)
                     is_mapped = node_connect.receive()
