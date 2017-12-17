@@ -6,8 +6,6 @@ from mr.table.errors import TableNotFoundError
 
 class MasterNode(object):
 
-    BUF_SIZE = 1024
-
     def __init__(self):
         self._tables = dict()
         self._nodes = dict()
@@ -49,9 +47,7 @@ class MasterNode(object):
         return self._tables[table_path].nodes
 
     def get_node(self, node_addr):
-        print 'get_node: ', node_addr
-        print self._nodes.values()[0]
         return self._nodes.get(node_addr)
 
     def get_table_info(self, table_path):
-        return self._tables[table_path]
+        return self._tables.get(table_path)

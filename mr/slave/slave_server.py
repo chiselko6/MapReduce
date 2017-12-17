@@ -5,6 +5,7 @@ from mr.connect import Connect
 from mr.util.message import line_packing
 from file_manager import SlaveFileManager
 from threading import Thread
+from mr.server_errors import IncorrectMessageError, ServerError
 
 
 master_addr = None
@@ -14,6 +15,10 @@ slave_addr = None
 def parse_input(data):
     parts = data.split('\n')
     return parts[0], parts[1:]
+
+
+def inform_error(connect, msg):
+    connect.send_once(msg)
 
 
 def connect_to_master(size_limit):
@@ -100,7 +105,12 @@ def handle_connection(slave, file_manager, conn, addr):
     with Connect(socket=conn) as connect:
         data_recv = connect.receive_by_line()
         command = next(data_recv)
-        handle_command(command, slave, file_manager, connect, data_recv)
+        try:
+            handle_command(command, slave, file_manager, connect, data_recv)
+        except ServerError as e:
+            inform_error(connect, e.msg)
+        except StopIteration as e:
+            inform_error(connect, 'ERROR: Invalid message')
 
 
 def start(port, master_host, master_port, size_limit):

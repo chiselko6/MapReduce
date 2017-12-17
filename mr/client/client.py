@@ -20,7 +20,7 @@ class Client(object):
                 node_addr = connect.receive()
                 if not node_addr:
                     raise OutOfRecourseError('An error has occured')
-                if node_addr.startswith('Error'):
+                if node_addr.startswith('ERROR'):
                     raise OutOfRecourseError('No free nodes')
 
                 node_host, node_port = node_addr.split(':')
