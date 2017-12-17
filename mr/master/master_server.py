@@ -6,6 +6,7 @@ from mr.util.message import line_packing
 from threading import Thread
 from mr.server_errors import IncorrectMessageError, ServerError
 from mapper_info import MasterMapper
+import signal
 
 
 mapper = MasterMapper()
@@ -140,6 +141,16 @@ def handle_connection(master, conn, addr):
             inform_error(connect, e.msg)
 
 
+def remove_finished():
+    global threads
+    remaining_threads = []
+    for thr in threads:
+        if thr.isAlive():
+            remaining_threads.append(thr)
+    threads = remaining_threads
+
+
+threads = []
 def start(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -157,5 +168,16 @@ def start(host, port):
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
         thread = Thread(target=handle_connection, args=(master, conn, addr))
         thread.start()
+        threads.append(thread)
+        remove_finished()
 
     s.close()
+
+
+def shutdown_handler(signal, frame):
+    for thr in threads:
+        thr.join()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, shutdown_handler)

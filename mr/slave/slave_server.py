@@ -6,6 +6,8 @@ from mr.util.message import line_packing
 from file_manager import SlaveFileManager
 from threading import Thread
 from mr.server_errors import IncorrectMessageError, ServerError
+import signal
+from time import sleep
 
 
 master_addr = None
@@ -116,6 +118,16 @@ def handle_connection(slave, file_manager, conn, addr):
             inform_error(connect, str(e))
 
 
+def remove_finished():
+    global threads
+    remaining_threads = []
+    for thr in threads:
+        if thr.isAlive():
+            remaining_threads.append(thr)
+    threads = remaining_threads
+
+
+threads = []
 def start(port, master_host, master_port, size_limit):
     global master_addr
     global slave_addr
@@ -148,5 +160,16 @@ def start(port, master_host, master_port, size_limit):
         thread = Thread(target=handle_connection, args=(
             slave, file_manager, conn, addr))
         thread.start()
+        threads.append(thread)
+        remove_finished()
 
     s.close()
+
+
+def shutdown_handler(signal, frame):
+    for thr in threads:
+        thr.join()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, shutdown_handler)
