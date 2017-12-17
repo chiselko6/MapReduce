@@ -113,7 +113,7 @@ def handle_connection(slave, file_manager, conn, addr):
         except StopIteration as e:
             inform_error(connect, 'ERROR: Invalid message')
         except Exception as e:
-            inform_error(connect, e.msg)
+            inform_error(connect, str(e))
 
 
 def start(port, master_host, master_port, size_limit):
@@ -142,7 +142,7 @@ def start(port, master_host, master_port, size_limit):
     slave = SlaveNode(host, port, size_limit)
     file_manager = SlaveFileManager()
 
-    while 1:
+    while True:
         conn, addr = s.accept()
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
         thread = Thread(target=handle_connection, args=(

@@ -13,7 +13,7 @@ def create_parser():
     parser.add_argument('--delete')
     parser.add_argument('--map', nargs='+')
     parser.add_argument('--table-info')
-    parser.add_argument('--list-dir', action='store_true')
+    parser.add_argument('--list-dir')
 
     parser.add_argument('--start-master', nargs=2)
     parser.add_argument('--start-slave', nargs=4)
@@ -50,7 +50,11 @@ def run_command(namespace):
         table_info = client.get_table_info(table_path)
         print table_info
     elif namespace.list_dir:
-        print 'list_dir'
+        client = Client()
+        cluster_path = namespace.list_dir
+        cluster_info = client.list_dir(cluster_path)
+        for cl in cluster_info:
+            print cl
     elif namespace.start_master:
         host, port = namespace.start_master
         # host, port = '', 2222

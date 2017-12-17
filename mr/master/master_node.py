@@ -51,3 +51,10 @@ class MasterNode(object):
 
     def get_table_info(self, table_path):
         return self._tables.get(table_path)
+
+    def get_cluster_info(self, cluster_path):
+        cluster_info = []
+        for table in self._tables.values():
+            if table.name.startswith(cluster_path):
+                cluster_info.append(table.name)
+        return cluster_info

@@ -34,6 +34,7 @@ class Client(object):
                     while True:
                         if not line:
                             line = sys.stdin.readline()
+                        print 'read line:', line
                         if line == '':
                             sent = True
                             break
@@ -123,3 +124,12 @@ class Client(object):
             if table_info.startswith('ERROR:'):
                 raise KeyError(table_info)
             return table_info
+
+    def list_dir(self, cluster_path):
+        with Connect(self._master_config.host, self._master_config.port) as connect:
+            connect.send(line_packing('list_dir', cluster_path))
+            cluster_info = connect.receive_by_line()
+            for cl in cluster_info:
+                if cl.startswith('ERROR:'):
+                    raise RuntimeError(cl)
+                yield cl

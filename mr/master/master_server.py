@@ -91,6 +91,16 @@ def get_table_info(master, connect, args):
     connect.send_once(str(table_info))
 
 
+def list_dir(master, connect, args):
+    if len(args) != 1:
+        raise IncorrectMessageError()
+    cluster_path = args[0]
+    cluster_info = master.get_cluster_info(cluster_path)
+    if not cluster_info:
+        raise ServerError('Cluster not found')
+    connect.send_once(line_packing(*cluster_info))
+
+
 def handle_command(command, master, connect, args):
     print 'running command...', command, args
     if command == 'write':
@@ -109,6 +119,8 @@ def handle_command(command, master, connect, args):
         map_request(master, connect, args)
     elif command == 'table_info':
         get_table_info(master, connect, args)
+    elif command == 'list_dir':
+        list_dir(master, connect, args)
 
 
 def handle_connection(master, conn, addr):
