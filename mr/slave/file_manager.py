@@ -1,4 +1,3 @@
-from mr.connect import Connect
 import os
 
 
@@ -22,7 +21,6 @@ class SlaveFileManager(object):
         self.latest_slot += 1
         return slot_path
 
-    def receive_file(self, socket, proc_id, file_name):
-        with Connect(socket=socket) as connect:
-            file_path = '{}{}'.format(self.get_slot_path(proc_id), file_name)
-            connect.receive_file(proc_id, file_path)
+    def receive_file(self, connect, proc_id, file_name):
+        file_path = '{}{}'.format(self.get_slot_path(proc_id), file_name)
+        connect.receive_file(proc_id, file_path)

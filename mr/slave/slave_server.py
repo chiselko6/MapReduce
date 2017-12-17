@@ -6,13 +6,100 @@ from mr.util.message import line_packing
 from file_manager import SlaveFileManager
 
 
-def connect_to_master(host, port, master_host, master_port, size_limit):
-    Connect(master_host, master_port).send_once('new_slave\n{}\n{}\n{}'.format(host, port, str(size_limit)))
+master_addr = None
+slave_addr = None
+
+
+def parse_input(data):
+    parts = data.split('\n')
+    return parts[0], parts[1:]
+
+
+def connect_to_master(size_limit):
+    connect_msg = line_packing('new_slave', slave_addr[0], slave_addr[1], size_limit)
+    Connect(*master_addr).send_once(connect_msg)
+
+
+def write(slave, connect, args):
+    table_path = next(args)
+    size_written = 0
+    for line in args:
+        is_written = slave.write_table_line(table_path, line)
+        if not is_written:
+            connect.send_once('not ok')
+            break
+        else:
+            connect.send('ok')
+        size_written += len(line)
+    with Connect(*master_addr) as master_connect:
+        new_table_inform = line_packing('table_add', slave_addr[0], slave_addr[1], table_path, size_written)
+        master_connect.send_once(new_table_inform)
+
+
+def read(slave, connect, args):
+    table_path = next(args)
+    for line in slave.read_table(table_path):
+        connect.send(line)
+
+
+def delete_table(slave, connect, args):
+    slave.delete_table(args)
+    with Connect(*master_addr) as master_connect:
+        removed_table_inform = line_packing('table_remove', slave_addr[0], slave_addr[1], table_path)
+        master_connect.send_once(removed_table_inform)
+
+
+def map_request(slave, file_manager, connect, args):
+    proc_id = file_manager.get_empty_slot()
+    file_manager.reserve_space(proc_id)
+    connect.send_once(proc_id)
+
+
+def add_file(slave, file_manager, connect, args):
+    proc_id = next(args)
+    help_file = next(args)
+    connect.send('ok')
+    file_manager.receive_file(connect, proc_id, help_file)
+
+
+def map_start(slave, file_manager, connect, args):
+    table_in = next(args)
+    table_out = next(args)
+    script = next(args)
+    proc_id = next(args)
+
+    exec_dir = file_manager.get_slot_path(proc_id)
+    is_mapped, size_written = slave.map(table_in, table_out, script, exec_dir)
+    connect.send_once('ok' if is_mapped else 'not ok')
+    with Connect(*master_addr) as master_connect:
+        new_table_inform = line_packing('table_add', slave_addr[0], slave_addr[1], table_out, size_written)
+        master_connect.send_once(new_table_inform)
+
+
+
+def handle_command(command, slave, file_manager, connect, args):
+    if command == 'write':
+        write(slave, connect, args)
+    elif command == 'read':
+        read(slave, connect, args)
+    elif command == 'delete':
+        delete_table(slave, connect, args)
+    elif command == 'map':
+        map_request(slave, file_manager, connect, args)
+    elif command == 'file_add':
+        add_file(slave, file_manager, connect, args)
+    elif command == 'map_run':
+        map_start(slave, file_manager, connect, args)
 
 
 def start(port, master_host, master_port, size_limit):
+    global master_addr
+    global slave_addr
+    master_addr = (master_host, master_port)
     host = '127.0.0.1'
-    connect_to_master(host, port, master_host, master_port, size_limit)
+    slave_addr = (host, port)
+
+    connect_to_master(size_limit)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print 'Slave socket created'
@@ -38,51 +125,6 @@ def start(port, master_host, master_port, size_limit):
         with Connect(socket=conn) as connect:
             data_recv = connect.receive_by_line()
             command = next(data_recv)
-            if command == 'write':
-                table_path = next(data_recv)
-                size_written = 0
-                for line in data_recv:
-                    is_written = slave.write_table_line(table_path, line)
-                    if not is_written:
-                        connect.send_once('not ok')
-                        break
-                    else:
-                        connect.send('ok')
-                    size_written += len(line)
-                with Connect(master_host, master_port) as master_connect:
-                    # with size
-                    new_table_inform = '\n'.join(['table_add', host, str(port), table_path, str(size_written)])
-                    master_connect.send_once(new_table_inform)
-            elif command == 'read':
-                table_path = next(data_recv)
-                for line in slave.read_table(table_path):
-                    connect.send(line)
-            elif command == 'delete':
-                slave.delete_table(data_recv)
-                with Connect(master_host, master_port) as master_connect:
-                    removed_table_inform = '\n'.join(['table_remove', host, str(port), table_path])
-                    master_connect.send_once(removed_table_inform)
-            elif command == 'map':
-                proc_id = file_manager.get_empty_slot()
-                file_manager.reserve_space(proc_id)
-                connect.send_once(proc_id)
-
-            elif command == 'file_add':
-                proc_id = next(data_recv)
-                help_file = next(data_recv)
-                connect.send('ok')
-                file_manager.receive_file(conn, proc_id, help_file)
-            elif command == 'map_run':
-                table_in = next(data_recv)
-                table_out = next(data_recv)
-                script = next(data_recv)
-                proc_id = next(data_recv)
-
-                exec_dir = file_manager.get_slot_path(proc_id)
-                is_mapped, size_written = slave.map(table_in, table_out, script, exec_dir)
-                connect.send_once('ok' if is_mapped else 'not ok')
-                with Connect(master_host, master_port) as master_connect:
-                    new_table_inform = line_packing('table_add', host, port, table_out, size_written)
-                    master_connect.send_once(new_table_inform)
+            handle_command(command, slave, file_manager, connect, data_recv)
 
     s.close()
