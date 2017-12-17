@@ -3,6 +3,7 @@ from mr.table.table import Table
 from mr.table.errors import TableNotFoundError
 import subprocess
 from mr.node_info import NodeInfo
+import sys
 
 
 class SlaveNode(object):
@@ -52,31 +53,16 @@ class SlaveNode(object):
         table.delete()
         del self._tables[table_path]
 
-    def map(self, table_in_path, table_out_path, script, helping_files=[]):
-        # mv files here
-        # table_in_path = next(map_data)
-        # table_out_path = next(map_data)
-        table_out = self._tables.get(table_out_path)
-        if table_out is None:
-            table_out = self.add_table(table_out_path)
-        # script = next(map_data)
-        # helping_files = [help_file for help_file in map_data]
-
+    def map(self, table_in_path, table_out_path, script, exec_dir):
         for line in self.read_table(table_in_path):
-            # print line
-            # subprocess.call(script)
-            # table_out.write_line(raw_input())
-
-            def simple_map(line):
-                # line = raw_input()
-                return line + '#' + line
-            table_out.write_line(simple_map(line))
-
-    def download_files(self, files):
-        pass
-
-    # def map(self, table_in, script, files):
-    #     self.download_files(files)
-    #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #
-    #     os.system(script)
+            process = subprocess.Popen(script, cwd=exec_dir, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            print 'input line:', line
+            stdout, stderr = process.communicate(line)
+            print 'map result', stdout
+            for out_line in stdout.split('\n'):
+                print 'out_line:', out_line
+                was_written = self.write_table_line(table_out_path, out_line)
+                print 'was_written', was_written
+                if not was_written:
+                    return False
+        return True

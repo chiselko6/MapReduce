@@ -13,7 +13,6 @@ class NodeTableInfo(object):
 class TableInfo(object):
 
     def __init__(self, name):
-        self._size = 0
         self._node_infos = dict()
         self.name = name
 
@@ -28,8 +27,12 @@ class TableInfo(object):
             del self._node_infos[node_addr]
 
     @property
+    def size(self):
+        return sum(map(lambda node: node.size, self.nodes))
+
+    @property
     def nodes(self):
         return map(lambda inf: inf.node, self._node_infos.values())
 
     def __str__(self):
-        return '{}\nTotal size: {}\n{}'.format(self.name, self._size, '\n'.join(map(str, self._node_infos)))
+        return '{}\nTotal size: {}\nNodes used: {}'.format(self.name, self.size, len(self.nodes))

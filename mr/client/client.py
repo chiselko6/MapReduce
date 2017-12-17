@@ -78,6 +78,7 @@ class Client(object):
                     node_connect.send(table_path + '\n')
 
     def map(self, table_in, table_out, script, helping_files=[]):
+        is_all_mapped = True
         with Connect(self._master_config.host, self._master_config.port) as connect:
             connect.send_once(line_packing('map', table_in))
             nodes_with_table = connect.receive_by_line()
@@ -96,8 +97,21 @@ class Client(object):
                         print 'client local file path', help_file_local_path
                         file_add_msg = line_packing('file_add', proc_id, help_file_local_path)
                         node_connect.send(file_add_msg + '\n')
-                        node_connect.send_file(proc_id, help_file)
+                        file_send_start_status = node_connect.receive()
+                        if file_send_start_status == 'ok':
+                            node_connect.send_file(proc_id, help_file)
 
                 map_msg = line_packing('map_run', table_in, table_out, script, proc_id, line_packing(helping_files))
                 with Connect(node_host, node_port) as node_connect:
                     node_connect.send_once(map_msg)
+                    is_mapped = node_connect.receive()
+                    if is_mapped != 'ok':
+                        is_all_mapped = False
+        return is_all_mapped
+
+    def get_table_info(self, table_path):
+        with Connect(self._master_config.host, self._master_config.port) as connect:
+            connect.send('table_info\n')
+            connect.send(table_path)
+            table_info = connect.receive()
+            return table_info

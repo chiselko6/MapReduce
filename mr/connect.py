@@ -45,7 +45,7 @@ class Connect(object):
         data = True
 
         while data:
-            data = self.receive()
+            data = self._socket.recv(self.BUF_SIZE)
             next_line += data
             # print 'next_line before: ', next_line
             if '\n' in data:
@@ -110,7 +110,7 @@ class Connect(object):
 
             #recv something
             try:
-                data = self._socket.recv(8192)
+                data = self._socket.recv(self.BUF_SIZE)
                 if data:
                     total_data.append(data)
                     #change the beginning time for measurement

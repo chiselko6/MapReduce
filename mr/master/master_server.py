@@ -22,6 +22,8 @@ def parse_input(data):
         return 'delete', parts[1:]
     elif parts[0] == 'map':
         return 'map', parts[1:]
+    elif parts[0] =='table_info':
+        return 'table_info', parts[1:]
 
 
 def start(host, port):
@@ -80,5 +82,9 @@ def start(host, port):
                 table_nodes = master.get_table_nodes(table_in)
                 table_nodes = map(lambda node: node.url, table_nodes)
                 connect.send_once(line_packing(*table_nodes))
+            elif command == 'table_info':
+                table_name = args[0]
+                table_info = master.get_table_info(table_name)
+                connect.send_once(str(table_info))
 
     s.close()

@@ -16,6 +16,8 @@ class SlaveFileManager(object):
 
     def reserve_space(self, slot):
         slot_path = self.get_slot_path(slot)
+        # if not os.path.exists(slot_path):
+        #     os.mkdir(slot_path)
         os.mkdir(slot_path)
         self.latest_slot += 1
         return slot_path

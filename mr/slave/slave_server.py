@@ -70,6 +70,7 @@ def start(port, master_host, master_port, size_limit):
             elif command == 'file_add':
                 proc_id = next(data_recv)
                 help_file = next(data_recv)
+                connect.send('ok')
                 file_manager.receive_file(conn, proc_id, help_file)
             elif command == 'map_run':
                 table_in = next(data_recv)
@@ -78,7 +79,8 @@ def start(port, master_host, master_port, size_limit):
                 proc_id = next(data_recv)
 
                 exec_dir = file_manager.get_slot_path(proc_id)
-                slave.map(table_in, table_out, script, exec_dir)
+                is_mapped = slave.map(table_in, table_out, script, exec_dir)
+                connect.send_once('ok' if is_mapped else 'not ok')
                 with Connect(master_host, master_port) as master_connect:
                     new_table_inform = line_packing('table_add', host, port, table_out, 0)
                     master_connect.send_once(new_table_inform)

@@ -38,9 +38,17 @@ def run_command(namespace):
         client = Client()
         table_in, table_out, script = namespace.map[:3]
         helping_files = namespace.map[3:]
-        client.map(table_in, table_out, script, helping_files)
+        is_mapped = client.map(table_in, table_out, script, helping_files)
+        if is_mapped:
+            msg = 'Map succeed!'
+        else:
+            msg = 'Not all nodes ran successfully'
+        print msg
     elif namespace.table_info:
-        print namespace.table_info
+        client = Client()
+        table_path = namespace.table_info
+        table_info = client.get_table_info(table_path)
+        print table_info
     elif namespace.list_dir:
         print 'list_dir'
     elif namespace.start_master:
