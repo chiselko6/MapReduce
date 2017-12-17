@@ -7,6 +7,9 @@ class NodeInfo(object):
         self._tables = []
         self._size_limit = size_limit
 
+    def add_size(self, size):
+        self._size += size
+
     @property
     def host(self):
         return self._host

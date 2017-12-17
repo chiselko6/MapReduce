@@ -1,9 +1,11 @@
 import socket
+import time
 
 
 class Connect(object):
 
     BUF_SIZE = 1024
+    FILE_SIZE_BUF = 4
 
     def __init__(self, host=None, port=None, socket=None):
         self.host = host
@@ -25,21 +27,16 @@ class Connect(object):
         self.send(msg)
         self._socket.shutdown(socket.SHUT_WR)
 
-    def send_and_receive(self, command):
-        # sock = self.connect()
+    def send_line_and_receive(self, command):
+        self.send(str(command) + '\n')
         recv_data = ''
         data = True
-
-        self.send(command)
-        # self.close()
-        # self._connect()
 
         while data:
             data = self.receive()
             recv_data += data
 
-        # sock.close()
-        return recv_data
+        return recv_data or False
 
     def receive_by_line(self):
         if self._socket is None:
@@ -48,7 +45,7 @@ class Connect(object):
         data = True
 
         while data:
-            data = self._socket.recv(self.BUF_SIZE)
+            data = self.receive()
             next_line += data
             # print 'next_line before: ', next_line
             if '\n' in data:
@@ -59,33 +56,90 @@ class Connect(object):
             # print 'received: ' + data
         yield next_line
 
-    def send_file(self, file_path):
+    def send_file(self, proc_id, file_path):
+        print 'sending file to', proc_id, file_path
         with open(file_path, 'r') as fin:
-            for line in fin.readline():
+            for line in fin.readlines():
+                print 'sending line...'
+                print line
                 self.send(line)
         self._socket.shutdown(socket.SHUT_WR)
 
-    def receive_file(self, file_path):
+    def receive_file(self, proc_id, file_path):
+        print 'receiving file to', proc_id, file_path
+        # file_size = int(self.receive_sized(self.FILE_SIZE_BUF))
         with open(file_path, 'w') as fout:
-            fout.write(self.receive())
+            for line in self.receive_by_line():
+                print 'received line:', line
+                fout.write(line + '\n')
 
-    def receive(self):
+    def receive_sized(self, max_size):
         if self._socket is None:
             self._connect()
         data = True
         recv = ''
+        recv_size = 0
 
-        while data:
+        while data and recv_size < max_size:
             print 'wait another data...'
-            data = self._socket.recv(self.BUF_SIZE)
+            chunk = self.BUF_SIZE if recv_size + self.BUF_SIZE <= max_size else max_size - recv_size
+            data = self._socket.recv(chunk)
+            recv_size += chunk
             print 'received data: ', data
             recv += data
 
         return recv
 
+    def receive(self, timeout=0.3):
+        if self._socket is None:
+            self._connect()
+
+        self._socket.setblocking(0)
+        total_data = []
+
+        begin = time.time()
+        print 'started at', begin
+        while True:
+            #if you got some data, then break after timeout
+            if total_data and time.time() - begin > timeout:
+                break
+
+            #if you got no data at all, wait a little longer, twice the timeout
+            elif time.time() - begin > timeout * 2:
+                break
+
+            #recv something
+            try:
+                data = self._socket.recv(8192)
+                if data:
+                    total_data.append(data)
+                    #change the beginning time for measurement
+                    begin = time.time()
+                else:
+                    #sleep for sometime to indicate a gap
+                    time.sleep(0.1)
+            except:
+                pass
+
+        #join all parts to make final string
+        return ''.join(total_data)
+        # data = True
+        # recv = ''
+        #
+        # while data:
+        #     print 'wait another data...'
+        #     data = self._socket.recv(self.BUF_SIZE)
+        #     print 'received data: ', data
+        #     recv += data
+        #
+        # return recv
+
     def close(self):
         self._socket.close()
         self._socket = None
+
+    def stop_receive(self):
+        self.shutdown(socket.SHUT_RD)
 
     def __enter__(self):
         print 'connecting to host...', self.host, self.port

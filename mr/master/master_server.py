@@ -51,7 +51,11 @@ def start(host, port):
             action = connect.receive()
             command, args = parse_input(action)
             if command == 'write':
-                master.redirect_to_free_node(conn)
+                free_node = master.get_free_node()
+                if free_node is None:
+                    connect.send_once('Error: No free nodes')
+                else:
+                    connect.send_once(free_node.url)
             elif command == 'read':
                 table_path = args[0]
                 table_nodes = master.get_table_info(table_path).nodes

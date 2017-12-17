@@ -4,18 +4,28 @@ class Table(object):
 
     def __init__(self, name):
         self._name = name
+        self._size = 0
 
     def read_line(self):
-        print 'reading table ', self._name
         with open(self._name, 'r') as fin:
             for line in fin:
-                print 'table line: ', line
                 yield line
 
+    def read_all(self):
+        with open(self._name, 'r') as fin:
+            return fin.readlines()
+
     def write_line(self, line):
-        # print 'table write_line: ', self._name, line
+        added_size = len(line)
         with open(self._name, 'a+') as fout:
             fout.write(line + '\n')
+        self._size += added_size
+        return added_size
 
     def delete(self):
+        self._size = 0
         os.remove(self._name)
+
+    @property
+    def size(self):
+        return self._size

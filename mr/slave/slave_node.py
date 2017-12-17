@@ -2,14 +2,16 @@ import socket
 from mr.table.table import Table
 from mr.table.errors import TableNotFoundError
 import subprocess
+from mr.node_info import NodeInfo
 
 
 class SlaveNode(object):
 
     LINE_MAX_SIZE = 1024
 
-    def __init__(self):
+    def __init__(self, host, port, size_limit):
         self._tables = dict()
+        self._node_info = NodeInfo(host, port, size_limit)
 
     def add_table(self, table_path):
         new_table = Table(table_path)
@@ -22,6 +24,16 @@ class SlaveNode(object):
             table = self.add_table(table_path)
         for line in lines:
             table.write_line(line)
+
+    def write_table_line(self, table_path, line):
+        table = self._tables.get(table_path)
+        if table is None:
+            table = self.add_table(table_path)
+        if self._node_info.available_size < len(line):
+            return False
+        table.write_line(line)
+        self._node_info.add_size(len(line))
+        return True
 
     def read_table(self, table_path):
         # table_path = next(table_data)

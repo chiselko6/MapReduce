@@ -1,6 +1,5 @@
-import socket
 import sys
-from node_info import NodeInfo
+from mr.node_info import NodeInfo
 from mr.table.table_info import TableInfo
 from mr.table.errors import TableNotFoundError
 
@@ -14,31 +13,16 @@ class MasterNode(object):
         self._nodes = dict()
 
     def add_node(self, host, port, size_limit):
-        # msg, host, port, size_limit = new_slave_msg.split()
         node = NodeInfo(host, int(port), float(size_limit))
         self._nodes[(host, port)] = node
-        # self._nodes.append(node)
-
-    # def add_node(self, sock, addr):
-    #     size_limit = sock.recv(self.BUF_SIZE)
-    #     print addr, size_limit, self.BUF_SIZE
-    #     node = NodeInfo(addr[0], addr[1], int(size_limit))
-    #     self._nodes.append(node)
 
     def get_free_node(self):
         for node in self._nodes.values():
             if node.available_size > 0:
                 return node
 
-    def redirect_to_free_node(self, sock):
-        free_node = self.get_free_node()
-        if free_node is None:
-            sock.sendall('Error: No free nodes')
-            return False
-        sock.sendall(free_node.url)
-        return True
-
     def add_table_node(self, table_path, table_size, node):
+        table_size = float(table_size)
         table = self._tables.get(table_path)
         if table is None:
             table = TableInfo(table_path)
@@ -46,6 +30,7 @@ class MasterNode(object):
             self._tables[table_path] = table
         else:
             table.add_node(node, table_size)
+        node.add_size(table_size)
 
     def remove_table_node(self, table_path, node):
         table = self._tables.get(table_path)
@@ -55,16 +40,6 @@ class MasterNode(object):
             table.remove_node(node)
         if len(table.nodes) == 0:
             del self._tables[table_path]
-
-    def map_node(self, node, table_in, table_out, script, files=[]):
-        pass
-
-    def map(self, table_in, table_out, script, files):
-        table = self._tables.get(table_in)
-        if table is None:
-            raise TableNotFoundError('Table {} not found'.format(table_in))
-        for node in table.nodes:
-            self.map_node(node, table_in, table_out, script, files)
 
     @property
     def nodes(self):

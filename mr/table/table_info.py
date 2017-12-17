@@ -5,9 +5,6 @@ class NodeTableInfo(object):
 
     def __init__(self, node, size):
         self.node = node
-        # self.rec_from = rec_from
-        # self.rec_to = rec_to
-        # self.name = name
         self.size = size
 
     def __str__(self):
@@ -20,15 +17,15 @@ class TableInfo(object):
         self._node_infos = dict()
         self.name = name
 
-    def add_node(self, node, size):
-        node_info = self._node_infos.get(node)
+    def add_node(self, node_addr, size):
+        node_info = self._node_infos.get(node_addr)
         if node_info is None:
-            self._node_infos[node] = NodeTableInfo(node, size)
+            self._node_infos[node_addr] = NodeTableInfo(node_addr, size)
 
-    def remove_node(self, node):
-        node_info = self._node_infos.get(node)
+    def remove_node(self, node_addr):
+        node_info = self._node_infos.get(node_addr)
         if node_info is not None:
-            del self._node_infos[node]
+            del self._node_infos[node_addr]
 
     @property
     def nodes(self):
@@ -36,6 +33,3 @@ class TableInfo(object):
 
     def __str__(self):
         return '{}\nTotal size: {}\n{}'.format(self.name, self._size, '\n'.join(map(str, self._node_infos)))
-    # @property
-    # def tables(self):
-    #     return map(lambda inf: Table(inf.node, inf.name), self._nodes_info)
