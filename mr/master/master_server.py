@@ -82,6 +82,14 @@ def handle_command(command, master, connect, args):
         get_table_info(master, connect, args)
 
 
+def handle_connection(master, conn, addr):
+    with Connect(socket=conn) as connect:
+        action = connect.receive()
+        print 'action:', action
+        command, args = parse_input(action)
+        handle_command(command, master, connect, args)
+
+
 def start(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -97,12 +105,7 @@ def start(host, port):
     while True:
         conn, addr = s.accept()
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
+        thread = Thread(target=handle_connection, args=(master, conn, addr))
+        thread.start()
 
-        with Connect(socket=conn) as connect:
-            action = connect.receive()
-            print 'action:', action
-            command, args = parse_input(action)
-            handle_command(command, master, connect, args)
-            # thread = Thread(target=handle_command, args = (command, master, connect, args))
-            # thread.start()
     s.close()

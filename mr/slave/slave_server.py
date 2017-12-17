@@ -4,6 +4,7 @@ from slave_node import SlaveNode
 from mr.connect import Connect
 from mr.util.message import line_packing
 from file_manager import SlaveFileManager
+from threading import Thread
 
 
 master_addr = None
@@ -16,7 +17,8 @@ def parse_input(data):
 
 
 def connect_to_master(size_limit):
-    connect_msg = line_packing('new_slave', slave_addr[0], slave_addr[1], size_limit)
+    connect_msg = line_packing(
+        'new_slave', slave_addr[0], slave_addr[1], size_limit)
     Connect(*master_addr).send_once(connect_msg)
 
 
@@ -32,7 +34,8 @@ def write(slave, connect, args):
             connect.send('ok')
         size_written += len(line)
     with Connect(*master_addr) as master_connect:
-        new_table_inform = line_packing('table_add', slave_addr[0], slave_addr[1], table_path, size_written)
+        new_table_inform = line_packing(
+            'table_add', slave_addr[0], slave_addr[1], table_path, size_written)
         master_connect.send_once(new_table_inform)
 
 
@@ -45,7 +48,8 @@ def read(slave, connect, args):
 def delete_table(slave, connect, args):
     slave.delete_table(args)
     with Connect(*master_addr) as master_connect:
-        removed_table_inform = line_packing('table_remove', slave_addr[0], slave_addr[1], table_path)
+        removed_table_inform = line_packing(
+            'table_remove', slave_addr[0], slave_addr[1], table_path)
         master_connect.send_once(removed_table_inform)
 
 
@@ -72,9 +76,9 @@ def map_start(slave, file_manager, connect, args):
     is_mapped, size_written = slave.map(table_in, table_out, script, exec_dir)
     connect.send_once('ok' if is_mapped else 'not ok')
     with Connect(*master_addr) as master_connect:
-        new_table_inform = line_packing('table_add', slave_addr[0], slave_addr[1], table_out, size_written)
+        new_table_inform = line_packing(
+            'table_add', slave_addr[0], slave_addr[1], table_out, size_written)
         master_connect.send_once(new_table_inform)
-
 
 
 def handle_command(command, slave, file_manager, connect, args):
@@ -90,6 +94,13 @@ def handle_command(command, slave, file_manager, connect, args):
         add_file(slave, file_manager, connect, args)
     elif command == 'map_run':
         map_start(slave, file_manager, connect, args)
+
+
+def handle_connection(slave, file_manager, conn, addr):
+    with Connect(socket=conn) as connect:
+        data_recv = connect.receive_by_line()
+        command = next(data_recv)
+        handle_command(command, slave, file_manager, connect, data_recv)
 
 
 def start(port, master_host, master_port, size_limit):
@@ -121,10 +132,8 @@ def start(port, master_host, master_port, size_limit):
     while 1:
         conn, addr = s.accept()
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
-
-        with Connect(socket=conn) as connect:
-            data_recv = connect.receive_by_line()
-            command = next(data_recv)
-            handle_command(command, slave, file_manager, connect, data_recv)
+        thread = Thread(target=handle_connection, args=(
+            slave, file_manager, conn, addr))
+        thread.start()
 
     s.close()
