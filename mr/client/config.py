@@ -9,13 +9,11 @@ class MasterConfigParser(object):
         self._port = None
 
     def _read(self):
-        self._host = '127.0.0.1'
-        self._port = 2222
-        # with open(self._config_path, 'r') as fin:
-        #     lines = fin.readlines()
-        #     assert len(lines) == 1, 'Config file is invalid'
-        #     self._host, self._port = lines[0].split(':')
-        #     self._port = int(self._port)
+        with open(self._config_path, 'r') as fin:
+            lines = fin.readlines()
+            assert len(lines) == 1, 'Config file is invalid'
+            self._host, self._port = lines[0].split(':')
+            self._port = int(self._port)
 
     def _write_new_config(self, config):
         with open(self._config_path, 'w') as fout:
@@ -48,7 +46,7 @@ class MasterConfigParser(object):
 class MasterConfig(object):
 
     def __init__(self, config_path=None):
-        config_path = config_path or '.mr_master_host.conf'
+        config_path = config_path or 'mr/client/.mr_master_host.conf'
         self._config_parser = MasterConfigParser(config_path)
 
     @property
