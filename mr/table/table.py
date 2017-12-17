@@ -4,6 +4,9 @@ class Table(object):
 
     def __init__(self, name):
         self._name = name
+        basedir = os.path.dirname(name)
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
         self._size = 0
 
     def read_line(self):
