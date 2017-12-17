@@ -54,6 +54,7 @@ class SlaveNode(object):
         del self._tables[table_path]
 
     def map(self, table_in_path, table_out_path, script, exec_dir):
+        total_size_written = 0
         for line in self.read_table(table_in_path):
             process = subprocess.Popen(script, cwd=exec_dir, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             print 'input line:', line
@@ -64,5 +65,7 @@ class SlaveNode(object):
                 was_written = self.write_table_line(table_out_path, out_line)
                 print 'was_written', was_written
                 if not was_written:
-                    return False
-        return True
+                    return False, total_size_written
+                else:
+                    total_size_written += len(out_line)
+        return True, total_size_written

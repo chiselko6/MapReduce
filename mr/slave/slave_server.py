@@ -79,10 +79,10 @@ def start(port, master_host, master_port, size_limit):
                 proc_id = next(data_recv)
 
                 exec_dir = file_manager.get_slot_path(proc_id)
-                is_mapped = slave.map(table_in, table_out, script, exec_dir)
+                is_mapped, size_written = slave.map(table_in, table_out, script, exec_dir)
                 connect.send_once('ok' if is_mapped else 'not ok')
                 with Connect(master_host, master_port) as master_connect:
-                    new_table_inform = line_packing('table_add', host, port, table_out, 0)
+                    new_table_inform = line_packing('table_add', host, port, table_out, size_written)
                     master_connect.send_once(new_table_inform)
 
     s.close()

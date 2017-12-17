@@ -4,7 +4,7 @@ class NodeInfo(object):
         self._host = host
         self._port = port
         self._size = 0
-        self._tables = []
+        self._tables = dict()
         self._size_limit = size_limit
 
     def add_size(self, size):
@@ -28,6 +28,9 @@ class NodeInfo(object):
 
     def __getitem__(self, table_name):
         return self._tables[table_name]
+
+    def __setitem__(self, table_name, table):
+        self._tables[table_name] = table
 
     @property
     def address(self):

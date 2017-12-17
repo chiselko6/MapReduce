@@ -85,6 +85,7 @@ def start(host, port):
             elif command == 'table_info':
                 table_name = args[0]
                 table_info = master.get_table_info(table_name)
+                print 'master tableinfo:', table_info
                 connect.send_once(str(table_info))
 
     s.close()
