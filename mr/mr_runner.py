@@ -38,12 +38,8 @@ def run_command(namespace):
         client = Client()
         table_in, table_out, script = namespace.map[:3]
         helping_files = namespace.map[3:]
-        is_mapped = client.map(table_in, table_out, script, helping_files)
-        if is_mapped:
-            msg = 'Map succeed!'
-        else:
-            msg = 'Not all nodes ran successfully'
-        print msg
+        map_id = client.map(table_in, table_out, script, helping_files)
+        print 'Map id:', map_id
     elif namespace.table_info:
         client = Client()
         table_path = namespace.table_info

@@ -5,6 +5,10 @@ from mr.connect import Connect
 from mr.util.message import line_packing
 from threading import Thread
 from mr.server_errors import IncorrectMessageError, ServerError
+from mapper_info import MasterMapper
+
+
+mapper = MasterMapper()
 
 
 def parse_input(data):
@@ -73,12 +77,13 @@ def remove_node_table(master, connect, args):
 
 
 def map_request(master, connect, args):
-    if len(args) != 1:
+    if len(args) != 2:
         raise IncorrectMessageError()
-    table_in = args[0]
+    table_in, table_out = args
+    map_info = mapper.create_map(table_in, table_out)
     table_nodes = master.get_table_nodes(table_in)
     table_nodes = map(lambda node: node.url, table_nodes)
-    connect.send_once(line_packing(*table_nodes))
+    connect.send_once(line_packing(map_info.id, *table_nodes))
 
 
 def get_table_info(master, connect, args):

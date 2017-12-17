@@ -4,6 +4,7 @@ import sys
 from client_errors import OutOfRecourseError
 from mr.connect import Connect
 from mr.util.message import line_packing
+from threading import Thread
 
 
 class Client(object):
@@ -81,11 +82,15 @@ class Client(object):
     def map(self, table_in, table_out, script, helping_files=[]):
         is_all_mapped = True
         with Connect(self._master_config.host, self._master_config.port) as connect:
-            connect.send_once(line_packing('map', table_in))
-            nodes_with_table = connect.receive_by_line()
-            if not nodes_with_table:
+            connect.send_once(line_packing('map', table_in, table_out))
+            map_info = connect.receive_by_line()
+            if not map_info:
                 raise KeyError('Cannot get nodes with table')
-            for node_addr in nodes_with_table:
+            map_id = next(map_info)
+            if map_id.startswith('ERROR:'):
+                raise KeyError(map_id)
+
+            def map_node(node_addr):
                 if node_addr.startswith('ERROR:'):
                     raise KeyError(node_addr)
                 node_host, node_port = node_addr.split(':')
@@ -111,10 +116,12 @@ class Client(object):
                     'map_run', table_in, table_out, script, proc_id, line_packing(helping_files))
                 with Connect(node_host, node_port) as node_connect:
                     node_connect.send_once(map_msg)
-                    is_mapped = node_connect.receive()
-                    if is_mapped != 'ok':
-                        is_all_mapped = False
-        return is_all_mapped
+                    node_connect.receive()
+
+            for node_addr in map_info:
+                thread = Thread(target=map_node, args=(node_addr,))
+                thread.start()
+        return map_id
 
     def get_table_info(self, table_path):
         with Connect(self._master_config.host, self._master_config.port) as connect:
