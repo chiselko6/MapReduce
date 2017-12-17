@@ -51,7 +51,8 @@ def read(slave, connect, args):
 
 
 def delete_table(slave, connect, args):
-    slave.delete_table(args)
+    table_path = next(args)
+    slave.delete_table(table_path)
     with Connect(*master_addr) as master_connect:
         removed_table_inform = line_packing(
             'table_remove', slave_addr[0], slave_addr[1], table_path)
